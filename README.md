@@ -22,15 +22,11 @@ Run the extractor.sh script with the following flags and arguments (also shown i
 
 ## Example
 Extract dosage information for SNPs not in LD (R^2 < 0.5) for all inter99 individuals from Decode dataset:
+
 `./extractor --snp SNPlist.example \
-
 	     --vcf /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ \
-
 	     --type DOSAGE \
-
 	     --cohort 1000 \
-
 	     --ld 0.5 \
-
 	     --out inter99.decode.extract`
 
