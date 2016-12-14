@@ -10,19 +10,19 @@ which will create the folder `SNPextractor` from where you will run the program
 ##How to use
 
 Run the extractor.sh script with the following flags and arguments (also shown if --help or -h is typed):
- * --snp File containing the list of SNPs that needs to extracted with the following requirement:
+ * `--snp` File containing the list of SNPs that needs to extracted with the following requirement:
   * Each line has variant name, chromosome and position, seperated by `\t` (tab) (see example file). 
   * **NB: Must be on same build as imputed data (commonly b37, but do check)**. 
- * --vcf Path to vcf containing the HRC imputed data. 
+ * `--vcf` Path to vcf containing the HRC imputed data. 
   * For example: `/emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/`
- * --type Specify which type of data for each SNP is needed. **Only one is allowed**. 
-  * Options are: `DOSAGE`, `GENOTYPE` or `LIKELIHOOD`. Default: `DOSAGE`
+ * `--type` Specify which type of data for each SNP is needed. **Only one is allowed**. 
+  * Options are: DOSAGE, GENOTYPE or LIKELIHOOD. Default: DOSAGE
  * Either of the following but not both.
-  * --cohort Prefix for a specific cohort. Extract all individuals which matches this prefix. For example `57x` matches the CIMT cohort
-  * --ind File containing a list of individuals you want extracted. One individual particid on each line, seperated by `\n`
+  * `--cohort` Prefix for a specific cohort. Extract all individuals which matches this prefix. For example `57x` matches the CIMT cohort
+  * `--ind` File containing a list of individuals you want extracted. One individual particid on each line, seperated by `\n`
  * Optional parameters
-  * --ld LD cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
-  * --out output filename. The suffix `.csv` will be added regardless. Default is: `SNPsExtracted.csv`
+  * `--ld` LD cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
+  * `--out` output filename. The suffix `.csv` will be added regardless. Default is: `SNPsExtracted.csv`
 
 ## Example
 Extract dosage information for SNPs not in LD (R^2 < 0.5) for all inter99 individuals from Decode dataset:
