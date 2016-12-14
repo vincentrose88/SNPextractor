@@ -19,7 +19,7 @@ Run the extractor.sh script with the following flags and arguments (also shown i
   * Options are: DOSAGE, GENOTYPE or LIKELIHOOD. Default: DOSAGE
  * Either of the following but not both.
   * `--cohort` Prefix for a specific cohort. Extract all individuals which matches this prefix. For example `57x` matches the CIMT cohort
-  * `--ind` File containing a list of individuals you want extracted. One individual particid on each line, seperated by `\n`
+  * `--ind` File containing a list of individuals you want extracted. One individuals particid on each line, using "\n".
  * Optional parameters
   * `--ld` LD cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
   * `--out` output filename. The suffix `.csv` will be added regardless. Default is: `SNPsExtracted.csv`
