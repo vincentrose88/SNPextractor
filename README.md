@@ -3,7 +3,7 @@ Simple extractor script to extract list of SNPs from HRC VCFs for CBMR
 
 ##Requirement
  * Software/build upon: 
-  * bcftools
+  * bcftools 1.3.1
   * R 3.0.1
   * python 2.7.3
 Data

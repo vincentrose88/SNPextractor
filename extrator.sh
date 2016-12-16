@@ -140,7 +140,7 @@ fi
 echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./submit_jobarray.py -w logs.for.extract. -n logs.for.concat. -m $memory
 #Getting the header (for later use)
 echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./submit_jobarray.py -n logs.for.header. -w logs.for.concat. -m $memory
-echo "./vcfToR.header.sh tmpGeno/$currentExtract/header.vcf"  | ./submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
+echo "./vcfToR.header.sh tmpGeno/$currentExtract"  | ./submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
 
 if [ $type = 'LIKELIHOOD' ]; then
     echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
@@ -149,8 +149,9 @@ elif [ $type = 'GENOTYPE' ]; then
 else 
     echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 fi
-echo "bcftools view -Ou -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
+echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
 
 #LD threshold
 
 #Format into csv with R.
+echo "./covertToCSV.R tmpGeno/$currentExtract/ $output" | ./submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
