@@ -1,3 +1,4 @@
+#!/usr/bin/Rscript
 args <- commandArgs(trailingOnly=T)
 
 folder <- args[1]
