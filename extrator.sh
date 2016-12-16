@@ -6,9 +6,10 @@ type="DOSAGE"
 ind="NA"
 ld=0.0
 output="SNPsExtracted"
+useDate=false
+memory="2G"
 
-
-while getopts ":s:v:t:i:l:o:" opt; do 
+while getopts ":s:v:t:i:l:o:m:d" opt; do 
     case $opt in 
 	s) #SNP <FILE>
 	    snp=$OPTARG
@@ -27,6 +28,12 @@ while getopts ":s:v:t:i:l:o:" opt; do
 	    ;;
 	o) #output <STRING>
 	    output=$OPTARG
+	    ;;
+	m) #output <STRING>
+	    memory=$OPTARG
+	    ;;
+	d) #date flag
+	    useDate=true
 	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
@@ -49,6 +56,8 @@ echo "type: $type"
 echo "indiduals: $ind"
 echo "ld: $ld"
 echo "output: $output"
+echo "Use timestamp: $useDate"
+echo "memory requested (post extracting from chromosomes): $memory"
 
 if [ $ind = 'NA' ]; then
     echo 'no list of individuals specified. Extracting SNPs from all individuals in dataset'
@@ -62,8 +71,11 @@ fi
 
 
 #Setup phase
-#currentExtract=`date | tr ' ' '.'`
-currentExtract="Thu.Dec.15.15:34:27.CET.2016"
+if $useDate; then
+    currentExtract=`date | tr ' ' '.'`
+else
+    currentExtract='tmpWorkdir'
+fi
 mkdir -p tmpGeno/imputed
 mkdir -p tmpGeno/$currentExtract/extracted
 mkdir -p tmpGeno/$currentExtract/splitted
@@ -91,31 +103,53 @@ do
     awk -v "chr=$chr" '$2==chr {print $2"\t"$3"\t"$3}' $snp > tmpGeno/$currentExtract/splitted/SNPs.on.chr.$chr.list
 done
 
-if [ x = y ]; then
 for snpchr in `ls tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list`; do
     chr=`basename $snpchr | cut -d'.' -f4`
     if [ $ind = 'NA' ]; then
-	echo "bcftools view -Oz -r $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
+	echo "bcftools view -Oz -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
     else
-	echo "bcftools view -Oz -s $ind -r $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
+	echo "bcftools view -Oz -S $ind -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
     fi
 done | ./submit_jobarray.py -m 18G -n logs.for.extract. #18G mem is based on size of chr2 for decode.
-fi 
   
 ###check with snp-name?
 
 #cat/collect everything into one vcf
-subVCFs=`ls tmpGeno/$currentExtract/extracted/from.chr.*.vcf.gz | tr '\n' ' '`
-echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./submit_jobarray.py -w logs.for.extract. -n logs.for.concat. -m 10G
+nrOfChromosomes=`awk '{print $2}' $snp | sort -n | uniq | wc -l`
+chrExtracted=`ls tmpGeno/$currentExtract/extracted/ | wc -l`
+stillLacking=`expr $nrOfChromosomes - $chrExtracted`
+
+#waiting for all chromosomes to be extracted
+while [ $stillLacking != 0 ]; do
+    echo '----------------------------'
+    echo 'Waiting for extraction of'
+    echo "$stillLacking chromosomes..."    
+    nrOfChromosomes=`awk '{print $2}' $snp | sort -n | uniq | wc -l`
+    chrExtracted=`ls tmpGeno/$currentExtract/extracted/ | wc -l`
+    stillLacking=`expr $nrOfChromosomes - $chrExtracted`
+    sleep 10
+done
+if [ $stillLacking = 0 ]; then
+    subVCFs=`ls tmpGeno/$currentExtract/extracted/from.chr.*.vcf.gz | tr '\n' ' '`
+else
+    echo "number of chromosomes requested doesn't match number of chromosomes extracted. Somethings wrong. Exiting..."
+    exit 2
+fi
+
+#Concating
+echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./submit_jobarray.py -w logs.for.extract. -n logs.for.concat. -m $memory
+#Getting the header (for later use)
+echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./submit_jobarray.py -n logs.for.header. -w logs.for.concat. -m $memory
+echo "./vcfToR.header.sh tmpGeno/$currentExtract/header.vcf"  | ./submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
 
 if [ $type = 'LIKELIHOOD' ]; then
-    echo $type
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 elif [ $type = 'GENOTYPE' ]; then
-    echo $type
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 else 
-    echo $type
-#    echo "bcftools annotate -R QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/all.SNPs.extracted.vcf.gz" 
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 fi
+echo "bcftools view -Ou -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
 
 #LD threshold
 

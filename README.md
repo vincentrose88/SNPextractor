@@ -31,7 +31,8 @@ Run the extractor.sh script with the following flags and arguments:
  * Optional parameters
   * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
   * `-o` **o**utput filename. The suffix `.csv` will be added regardless. Default is: SNPsExtracted.csv
-
+  * `-d` **d**ate flag. Use if you want to have timestamp-names on the temporary work-directory. Mandatory when using the extracting script from the same root folder to avoid overwriting.
+  * `-m` **m**emory requested post chromosomes extraction. How much memory do you want to request from the cluters grid engine after extracting from chromosomes? Default: 2G
 ## Example
 Extract dosage information for SNPs not in LD (R^2 < 0.5) for all inter99 individuals from Decode dataset:
 
