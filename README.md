@@ -26,7 +26,7 @@ Extract dosage information for for three inter99 individuals from Decode dataset
 
 Run the extractor.sh script with the following flags and arguments:
  * `-s` (**S**NP): File containing the list of SNPs that needs to extracted with the following requirement:
-  * Each line has variant name, chromosome and position, seperated by `\t` (tab) (see example file). 
+  * Each line has variant name, chromosome and position, seperated by '\t' (tab) or space ' ' (see example file). 
   * **NB: Must be on same build as imputed data (commonly b37, but do check)**. 
  * `-v` (**V**CF): Path to vcf containing the HRC imputed data. 
   * For example: `/emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/`
