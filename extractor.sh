@@ -6,7 +6,7 @@ type="DOSAGE"
 ind="NA"
 ld=0.0
 output="SNPsExtracted"
-useDate=false
+useDate=true
 memory="2G"
 
 while getopts ":s:v:t:i:l:o:m:d" opt; do 
@@ -33,7 +33,7 @@ while getopts ":s:v:t:i:l:o:m:d" opt; do
 	    memory=$OPTARG
 	    ;;
 	d) #date flag
-	    useDate=true
+	    useDate=false
 	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2

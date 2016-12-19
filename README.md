@@ -37,7 +37,7 @@ Run the extractor.sh script with the following flags and arguments:
   * `-i` (**i**ndividuals): File containing a list of individuals you want extracted. One individuals particid on each line, using "\n".
  * Optional parameters
   * `-o` **o**utput filename. The suffix `.csv` will be added regardless. Default is: SNPsExtracted.csv. **NB: Outputfiles with identical names will be overwritten**
-  * `-d` **d**ate flag. Use if you want to have timestamp-names on the temporary work-directory. Mandatory when using the extracting script from the same root folder to avoid overwriting.
+  * `-d` **d**ate flag. Use if you want to avoid having timestamp-names on the temporary work-directory. **Forbidden** when using the extracting script from the same root folder to avoid overwriting.
   * `-m` **m**emory requested post chromosomes extraction. How much memory do you want to request from the cluters grid engine after extracting from chromosomes? Default: 2G
  * Future options **Not yet implemented**:
   * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
