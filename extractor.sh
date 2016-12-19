@@ -79,20 +79,26 @@ fi
 mkdir -p tmpGeno/imputed
 mkdir -p tmpGeno/$currentExtract/extracted
 mkdir -p tmpGeno/$currentExtract/splitted
+isTheOutputFileThere="$output.csv"
 
+#Clearing out old output files
+if [ -f "$isTheOutputFileThere" ]; then
+    echo "Removing old outputfile: $output.csv"
+    rm $isTheOutputFileThere
+fi 
 
 if [ $vcf = 'NA' ]; then
-    tmpvcf=`ls tmpGeno/imputed/`
+    tmpvcf=`ls tmpGeno/imputed/ | head -1`
     vcf=`echo "tmpGeno/imputed/$tmpvcf"`
-    echo "no link to vcf given - using existing link at $vcf"
+    echo "no link to vcf given - using first existing link at $vcf"
 else
-    if [ `echo "$vcf" | rev | cut -d'/' -f2 | rev` != "`ls tmpGeno/imputed`" ]; then
+    if [ `echo "$vcf" | rev | cut -d'/' -f2 | rev` != "`ls tmpGeno/imputed/ | head -1`" ]; then
 	ln -s $vcf tmpGeno/imputed/
-	tmpvcf=`ls tmpGeno/imputed/`
+	tmpvcf=`ls tmpGeno/imputed/ | head -1`
 	vcf=`echo "tmpGeno/imputed/$tmpvcf"`
     else
 	echo "$vcf link already there"
-	tmpvcf=`ls tmpGeno/imputed/`
+	tmpvcf=`ls tmpGeno/imputed/ | head -1`
 	vcf=`echo "tmpGeno/imputed/$tmpvcf"`
     fi
 fi
@@ -110,7 +116,7 @@ for snpchr in `ls tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list`; do
     else
 	echo "bcftools view -Oz -S $ind -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
     fi
-done | ./submit_jobarray.py -m 18G -n logs.for.extract. #18G mem is based on size of chr2 for decode.
+done | ./sub_scripts/submit_jobarray.py -m 18G -n logs.for.extract. #18G mem is based on size of chr2 for decode.
   
 ###check with snp-name?
 
@@ -122,8 +128,7 @@ stillLacking=`expr $nrOfChromosomes - $chrExtracted`
 #waiting for all chromosomes to be extracted
 while [ $stillLacking != 0 ]; do
     echo '----------------------------'
-    echo 'Waiting for extraction of'
-    echo "$stillLacking chromosomes..."    
+    echo "Waiting for extraction of $stillLacking chromosomes..."    
     nrOfChromosomes=`awk '{print $2}' $snp | sort -n | uniq | wc -l`
     chrExtracted=`ls tmpGeno/$currentExtract/extracted/ | wc -l`
     stillLacking=`expr $nrOfChromosomes - $chrExtracted`
@@ -137,21 +142,38 @@ else
 fi
 
 #Concating
-echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./submit_jobarray.py -w logs.for.extract. -n logs.for.concat. -m $memory
+echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./sub_scripts/submit_jobarray.py -w logs.for.extract. -n logs.for.concat. -m $memory
 #Getting the header (for later use)
-echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./submit_jobarray.py -n logs.for.header. -w logs.for.concat. -m $memory
-echo "./vcfToR.header.sh tmpGeno/$currentExtract"  | ./submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
+echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./sub_scripts/submit_jobarray.py -n logs.for.header. -w logs.for.concat. -m $memory
+echo "./sub_scripts/vcfToR.header.sh tmpGeno/$currentExtract"  | ./sub_scripts/submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
 
 if [ $type = 'LIKELIHOOD' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 elif [ $type = 'GENOTYPE' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 else 
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 fi
-echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
+echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
 
 #LD threshold
 
 #Format into csv with R.
-echo "./covertToCSV.R tmpGeno/$currentExtract/ $output" | ./submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
+echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
+
+##Waiting for qstat scripts:
+while ! [ -f $isTheOutputFileThere ]
+do
+    echo "-------------------------------------------------------------------------------------"
+    echo 'Waiting for the cluster-submitted scrits to finish'
+    sleep 10
+done
+
+##Clean up and finish
+echo "-------------------------------------------------------------------------------------"
+mkdir -p logs
+mv logs.for.* logs/
+nrOfSNPs=`wc -l $snp`
+nrOfIndividuals=`wc -l $ind`
+echo "Extraction done. See logs-folder for logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output" 
+echo "-------------------------------------------------------------------------------------"
