@@ -8,8 +8,11 @@ ld=0.0
 output="SNPsExtracted"
 useDate=true
 memory="2G"
+cohort="NA"
+multipleCohort="NA"
+multipleCohortUsed=false
 
-while getopts ":s:v:t:i:l:o:m:d" opt; do 
+while getopts ":s:v:t:i:l:o:m:c:d" opt; do 
     case $opt in 
 	s) #SNP <FILE>
 	    snp=$OPTARG
@@ -29,8 +32,11 @@ while getopts ":s:v:t:i:l:o:m:d" opt; do
 	o) #output <STRING>
 	    output=$OPTARG
 	    ;;
-	m) #output <STRING>
+	m) #memory <STRING>
 	    memory=$OPTARG
+	    ;;
+	c) #cohort <integer>
+	    cohort=$OPTARG
 	    ;;
 	d) #date flag
 	    useDate=false
@@ -54,17 +60,39 @@ echo "snp: $snp"
 echo "vcf: $vcf"
 echo "type: $type"
 echo "indiduals: $ind"
+echo "cohort studyid: $cohort"
 echo "ld: $ld"
 echo "output: $output"
 echo "Use timestamp: $useDate"
 echo "memory requested (post extracting from chromosomes): $memory"
+echo "-------------------------------------------------------------------------------------"
 
-if [ $ind = 'NA' ]; then
-    echo 'no list of individuals specified. Extracting SNPs from all individuals in dataset'
+#Check if multiple cohorts is given
+if [[ $cohort != 'NA' ]] && [[ $cohort == *","* ]]; then
+    multipleCohort=`echo $cohort | sed 's/^/$2==/g' | sed 's/,/ || $2==/g' `
+    multipleCohortUsed=true
+fi
+
+
+#Use cohort studyid if there is no individual list.
+if [[ $ind = 'NA' ]] && [[ $cohort = 'NA' ]]; then
+    echo 'no list of individuals specified and no cohort study id given. Extracting SNPs from all individuals in dataset'
+elif [[ $ind = 'NA' ]]; then
+    echo "using cohort study id(s): $cohort to extract individuals"
+    if $multipleCohortUsed; then
+	cohortOut=`echo $cohort | sed 's/,/./g'`
+	awk "$multipleCohort" ./sub_scripts/particid.studyid.list | cut -d' ' -f1 > studyid.$cohortOut.individuals.list
+	ind=studyid.$cohortOut.individuals.list
+    else
+	awk -v "cohort=$cohort" '$2==cohort {print $1}' ./sub_scripts/particid.studyid.list > studyid.$cohort.individuals.list
+	ind=studyid.$cohort.individuals.list
+	echo $cohort
+    fi
+	
 fi
 
 # Captures missing arguments:
-if [ $snp = 'NA' ]; then
+if [[ $snp = 'NA' ]]; then
     echo 'no list of SNPs specified. Exiting..'
     exit 1
 fi
@@ -178,3 +206,4 @@ nrOfSNPs=`wc -l $snp | awk '{print $1}'`
 nrOfIndividuals=`wc -l $ind | awk '{print $1}'`
 echo "Extraction done. See logs-folder for logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
 echo "-------------------------------------------------------------------------------------"
+exit 0

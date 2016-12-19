@@ -39,9 +39,10 @@ Run the extractor.sh script with the following flags and arguments:
   * `-o` **o**utput filename. The suffix `.csv` will be added regardless. Default is: SNPsExtracted.csv. **NB: Outputfiles with identical names will be overwritten**
   * `-d` **d**ate flag. Use if you want to avoid having timestamp-names on the temporary work-directory. **Forbidden** when using the extracting script from the same root folder to avoid overwriting.
   * `-m` **m**emory requested post chromosomes extraction. How much memory do you want to request from the cluters grid engine after extracting from chromosomes? Default: 2G
+  * `-c` **c**ohort's study-id. Specify the study-id to extract all individuals from that study. Multiple studyids allowed when seperated with ',' and **no** spaces, ie. 1,2,3.
  * Future options **Not yet implemented**:
   * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
-  * `-s` **s**tudy-id for cohort. Specify the study-id to extract all individuals from that study.
+
 
 ### Output
 The extractions output is saved as two .csv files, one with only the genotype data (rows are individuals, columns are SNPs) and one with the info for each SNP (chromosome, position, ref and alt alleles).
