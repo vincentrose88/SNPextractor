@@ -8,6 +8,17 @@ geno <- read.table(paste(folder,'genoFile.noHead',sep=''),h=F,as.is=T)
 genoHeader <- read.table(paste(folder,'newHeader',sep=''),h=F,as.is=T)
 colnames(geno) <- t(genoHeader)
 
-final <- geno[,-which(colnames(geno) %in% c("QUAL", "FILTER", "INFO", "FORMAT"))]
+finalGeno <- geno[,-which(colnames(geno) %in% c("QUAL", "FILTER", "INFO", "FORMAT","REF","ALT","POS","CHROM"))]
+colnames(finalGeno)[colnames(finalGeno)=="ID"] <- "SNP"
+finalGeno <- t(finalGeno)
+colnames(finalGeno) <- finalGeno['SNP',]
+finalGeno <- finalGeno[-which(rownames(finalGeno)=='SNP'),]
 
-write.csv(final,paste(outputName,'csv',sep='.'),row.names=F,quote=F)
+finalInfo <- geno[,which(colnames(geno) %in% c("ID","REF","ALT","POS","CHROM"))]
+colnames(finalInfo)[colnames(finalInfo)=="ID"] <- "SNP"
+
+finalInfo <- finalInfo[,c('SNP','CHROM','POS','REF','ALT')]
+colnames(finalInfo)[4:5] <- c("REF(0)","ALT(2)")
+
+write.csv(finalGeno,paste(outputName,'geno','csv',sep='.'),row.names=T,quote=F)
+write.csv(finalInfo,paste(outputName,'info','csv',sep='.'),row.names=F,quote=F)

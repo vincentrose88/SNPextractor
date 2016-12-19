@@ -79,7 +79,7 @@ fi
 mkdir -p tmpGeno/imputed
 mkdir -p tmpGeno/$currentExtract/extracted
 mkdir -p tmpGeno/$currentExtract/splitted
-isTheOutputFileThere="$output.csv"
+isTheOutputFileThere="$output.geno.csv"
 
 #Clearing out old output files
 if [ -f "$isTheOutputFileThere" ]; then
@@ -165,7 +165,8 @@ echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scri
 while ! [ -f $isTheOutputFileThere ]
 do
     echo "-------------------------------------------------------------------------------------"
-    echo 'Waiting for the cluster-submitted scrits to finish'
+    echo '(Still) waiting for the cluster-submitted scrits to finish:'
+    qstat | awk 'NR!=2 {print $1,$3,$5}'
     sleep 10
 done
 
@@ -173,7 +174,7 @@ done
 echo "-------------------------------------------------------------------------------------"
 mkdir -p logs
 mv logs.for.* logs/
-nrOfSNPs=`wc -l $snp`
-nrOfIndividuals=`wc -l $ind`
-echo "Extraction done. See logs-folder for logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output" 
+nrOfSNPs=`wc -l $snp | awk '{print $1}'`
+nrOfIndividuals=`wc -l $ind | awk '{print $1}'`
+echo "Extraction done. See logs-folder for logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
 echo "-------------------------------------------------------------------------------------"

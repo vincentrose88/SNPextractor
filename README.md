@@ -1,5 +1,5 @@
 # SNPextractor
-Simple extractor script to extract list of SNPs from HRC VCFs for CBMR
+Simple extractor script to extract list of SNPs from HRC VCFs for CBMR.
 
 ##Requirement
  * Software/build upon: 
@@ -19,11 +19,12 @@ clone this repository with:
 which will create the folder `SNPextractor` from where you will need to go to (`cd SNPextractor`) to run the program.
 
 ##How to use
-## Example
+### Example
 Extract dosage information for for three inter99 individuals from Decode dataset:
 
 `./extractor.sh -s SNPlist.example -i individualslist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t DOSAGE -o inter99.decode.example`
 
+### Run
 Run the extractor.sh script with the following flags and arguments:
  * `-s` (**S**NP): File containing the list of SNPs that needs to extracted with the following requirement:
   * Each line has variant name, chromosome and position, seperated by '\t' (tab) or space ' ' (see example file). 
@@ -42,3 +43,6 @@ Run the extractor.sh script with the following flags and arguments:
   * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
   * `-s` **s**tudy-id for cohort. Specify the study-id to extract all individuals from that study.
 
+### Output
+The extractions output is saved as two .csv files, one with only the genotype data (rows are individuals, columns are SNPs) and one with the info for each SNP (chromosome, position, ref and alt alleles).
+ 
