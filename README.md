@@ -19,10 +19,16 @@ clone this repository with:
 which will create the folder `SNPextractor` from where you will need to go to (`cd SNPextractor`) to run the program.
 
 ##How to use
-### Example
-Extract dosage information for for three inter99 individuals from Decode dataset:
-
+### Examples
+Extract dosage information for 4 SNPs for three inter99 individuals from Decode dataset:
 `./extractor.sh -s SNPlist.example -i individualslist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t DOSAGE -o inter99.decode.example`
+
+Extract genotype information for 4 SNPs for all individuals in studies 1 and 2 from Decode dataset:
+`./extractor.sh -s SNPlist.example -c 1,2 -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t GENOTYPE -o project.1.2.decode.example`
+
+Extract likelihood information for 4 SNPs for all individuals from Decode dataset:
+`./extractor.sh -s SNPlist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t LIKELIHOOD -o all.decode.example`
+
 
 ### Run
 Run the extractor.sh script with the following flags and arguments:

@@ -4,7 +4,7 @@ snp="NA"
 vcf="NA"
 type="DOSAGE"
 ind="NA"
-ld=0.0
+ld="NA"
 output="SNPsExtracted"
 useDate=true
 memory="2G"
@@ -74,23 +74,6 @@ if [[ $cohort != 'NA' ]] && [[ $cohort == *","* ]]; then
 fi
 
 
-#Use cohort studyid if there is no individual list.
-if [[ $ind = 'NA' ]] && [[ $cohort = 'NA' ]]; then
-    echo 'no list of individuals specified and no cohort study id given. Extracting SNPs from all individuals in dataset'
-elif [[ $ind = 'NA' ]]; then
-    echo "using cohort study id(s): $cohort to extract individuals"
-    if $multipleCohortUsed; then
-	cohortOut=`echo $cohort | sed 's/,/./g'`
-	awk "$multipleCohort" ./sub_scripts/particid.studyid.list | cut -d' ' -f1 > studyid.$cohortOut.individuals.list
-	ind=studyid.$cohortOut.individuals.list
-    else
-	awk -v "cohort=$cohort" '$2==cohort {print $1}' ./sub_scripts/particid.studyid.list > studyid.$cohort.individuals.list
-	ind=studyid.$cohort.individuals.list
-	echo $cohort
-    fi
-	
-fi
-
 # Captures missing arguments:
 if [[ $snp = 'NA' ]]; then
     echo 'no list of SNPs specified. Exiting..'
@@ -130,6 +113,25 @@ else
 	vcf=`echo "tmpGeno/imputed/$tmpvcf"`
     fi
 fi
+
+#Use cohort studyid if there is no individual list.
+if [[ $ind = 'NA' ]] && [[ $cohort = 'NA' ]]; then
+    echo 'no list of individuals specified and no cohort study id given. Extracting SNPs from all individuals in dataset'
+elif [[ $ind = 'NA' ]]; then 
+    echo "using cohort study id(s): $cohort to extract individuals"
+    #getting header from vcf to only get genotyped individuals - hardcorded to extract from smallest chromosome (22)
+    bcftools view -h $vcf/22.vcf.gz | grep '#CHROM' | cut -f10- | tr '\t' '\n' > tmpGeno/$currentExtract/ind.in.vcf
+    if $multipleCohortUsed; then
+	cohortOut=`echo $cohort | sed 's/,/./g'`
+	grep -wFf <(awk "$multipleCohort" ./sub_scripts/particid.studyid.list | cut -d' ' -f1) tmpGeno/$currentExtract/ind.in.vcf > studyid.$cohortOut.in.vcf.individuals.list
+	ind="studyid.$cohortOut.in.vcf.individuals.list"
+    else
+	grep -wFf <(awk -v "cohort=$cohort" '$2==cohort {print $1}' ./sub_scripts/particid.studyid.list) tmpGeno/$currentExtract/ind.in.vcf > studyid.$cohort.in.vcf.individuals.list
+	ind="studyid.$cohort.in.vcf.individuals.list"
+    fi
+fi
+
+
 
 #splitting snplist into chromsomes, which is later looped through, for better I/O optimization (vcfs are not striped)
 for chr in `awk '{print $2}' $snp | sort -n | uniq`
@@ -176,18 +178,24 @@ echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o 
 echo "./sub_scripts/vcfToR.header.sh tmpGeno/$currentExtract"  | ./sub_scripts/submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
 
 if [ $type = 'LIKELIHOOD' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 elif [ $type = 'GENOTYPE' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 else 
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
 fi
 echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
 
 #LD threshold
-
+if [[ $ld!="NA" ]]; then
+    mkdir -p tmpGeno/$currentExtract/ld
+    echo "plink19 --vcf tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz --r2 --out tmpGeno/$currentExtract/ld/plink" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.ld. -w logs.for.concat.
+    ldFile="tmpGeno/$currentExtract/ld/plink.ld"   
 #Format into csv with R.
-echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
+    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $ld" | ./sub_scripts/submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
+else
+    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n logs.for.convertToCSV. -w logs.for.noheader. -m $memory
+fi
 
 ##Waiting for qstat scripts:
 while ! [ -f $isTheOutputFileThere ]
@@ -195,6 +203,8 @@ do
     echo "-------------------------------------------------------------------------------------"
     echo '(Still) waiting for the cluster-submitted scrits to finish:'
     qstat | awk 'NR!=2 {print $1,$3,$5}'
+    echo ''
+    echo 'Or waiting for results file to be written'
     sleep 10
 done
 
@@ -202,8 +212,9 @@ done
 echo "-------------------------------------------------------------------------------------"
 mkdir -p logs
 mv logs.for.* logs/
+mv $ind logs/
 nrOfSNPs=`wc -l $snp | awk '{print $1}'`
 nrOfIndividuals=`wc -l $ind | awk '{print $1}'`
-echo "Extraction done. See logs-folder for logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
+echo "Extraction done. See logs-folder for list of individuals ($ind) extracted and logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
 echo "-------------------------------------------------------------------------------------"
 exit 0
