@@ -9,8 +9,7 @@ Simple extractor script to extract list of SNPs from HRC VCFs for CBMR.
 Data
  * Imputed dataset on HRC panel (2016), in .vcf format, split into chromosomes
  * List of SNPs with chromosome and position on build 37 (same as HRC panel). One SNP pr. line in the following order: SNPID chromosome positions
-  * Use online tool, such as https://www.ncbi.nlm.nih.gov/SNP/dbSNP.cgi?list=rslist 
-* List of indidviduals as particids. One individual pr. line.
+ * List of indidviduals as particids. One individual pr. line.
 
 ##How to install
 clone this repository with:
