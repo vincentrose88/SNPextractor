@@ -7,7 +7,7 @@ Simple extractor script to extract list of SNPs from HRC VCFs for CBMR.
   * R 3.0.1
   * python 2.7.3
 Data
- * Imputed dataset on HRC panel (2016), in .vcf format, split into chromosomes
+ * Imputed dataset on HRC panel (2016), in .vcf format, **split into chromosomes and tabix'ed**
  * List of SNPs with chromosome and position on build 37 (same as HRC panel). One SNP pr. line in the following order: SNPID chromosome positions
  * List of indidviduals as particids. One individual pr. line.
 
