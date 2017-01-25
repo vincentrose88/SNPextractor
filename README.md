@@ -6,6 +6,11 @@ Simple extractor script to extract list of SNPs from HRC VCFs for CBMR.
   * bcftools 1.3.1
   * R 3.0.1
   * python 2.7.3
+ * For users of CBMR porus cluster: You migth want to update your path to have the same programs as me, so edit your `.bashrc` file by:
+  * `nano ~/.bashrc`
+  * add `export PATH=$PATH:/home/fng514/bin:/home/cxt155/impute_v2.3.0_x86_64_static:/home/cxt155/bin:/home/cxt155/zlib_ex:/home/cxt155/samtools-bcftools-htslib-1.0_x64-linux`
+
+
 Data
  * Imputed dataset on HRC panel (2016), in .vcf format, **split into chromosomes and tabix'ed**
  * List of SNPs with chromosome and position on build 37 (same as HRC panel). One SNP pr. line in the following order: SNPID chromosome positions
