@@ -212,7 +212,7 @@ done
 echo "-------------------------------------------------------------------------------------"
 mkdir -p logs
 mv logs.for.* logs/
-mv $ind logs/
+
 nrOfSNPs=`wc -l $snp | awk '{print $1}'`
 nrOfIndividuals=`wc -l $ind | awk '{print $1}'`
 echo "Extraction done. See logs-folder for list of individuals ($ind) extracted and logs for each step. Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
