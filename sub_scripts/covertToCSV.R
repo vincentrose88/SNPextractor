@@ -29,18 +29,25 @@ if(!is.na(ldcut)){
 }
 }
 
-
+#Getting the final format for the genofile
 finalGeno <- geno[,-which(colnames(geno) %in% c("QUAL", "FILTER", "INFO", "FORMAT","REF","ALT","POS","CHROM"))]
 colnames(finalGeno)[colnames(finalGeno)=="ID"] <- "SNP"
 finalGeno <- t(finalGeno)
-colnames(finalGeno) <- finalGeno['SNP',]
-finalGeno <- finalGeno[-which(rownames(finalGeno)=='SNP'),]
+genoColnames <- finalGeno['SNP',]
 
+if(ncol(finalGeno)>1){
+    finalGeno <- finalGeno[-which(rownames(finalGeno)=='SNP'),]
+}else{
+    finalGeno <- as.data.frame(finalGeno[-which(rownames(finalGeno)=='SNP'),],stringsAsFactors=F)
+}
+colnames(finalGeno) <- genoColnames
+
+#Info file
 finalInfo <- geno[,which(colnames(geno) %in% c("ID","REF","ALT","POS","CHROM","INFO"))]
 colnames(finalInfo)[colnames(finalInfo)=="ID"] <- "SNP"
-
 finalInfo <- finalInfo[,c('SNP','CHROM','POS','REF','ALT','INFO')]
 colnames(finalInfo)[4:5] <- c("REF(0)","ALT(2)")
 
+#Write out as csv's
 write.csv(finalGeno,paste(outputName,'geno','csv',sep='.'),row.names=T,quote=F)
 write.csv(finalInfo,paste(outputName,'info','csv',sep='.'),row.names=F,quote=F)

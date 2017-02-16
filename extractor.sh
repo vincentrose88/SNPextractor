@@ -11,8 +11,9 @@ memory="2G"
 cohort="NA"
 multipleCohort="NA"
 multipleCohortUsed=false
+sanger=false
 
-while getopts ":s:v:t:i:l:o:m:c:d" opt; do 
+while getopts ":s:v:t:i:l:o:m:c:da" opt; do 
     case $opt in 
 	s) #SNP <FILE>
 	    snp=$OPTARG
@@ -41,6 +42,9 @@ while getopts ":s:v:t:i:l:o:m:c:d" opt; do
 	d) #date flag
 	    useDate=false
 	    ;;
+	a) #sAnger server
+	    sanger=true
+	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
 	    exit 1
@@ -65,6 +69,7 @@ echo "ld: $ld"
 echo "output: $output"
 echo "Use timestamp: $useDate"
 echo "memory requested (post extracting from chromosomes): $memory"
+echo "sanger-flag set to: $sanger"
 echo "-------------------------------------------------------------------------------------"
 
 #Check if multiple cohorts is given
@@ -140,17 +145,24 @@ do
 done
 
 for snpchr in `ls tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list`; do
-    chr=`basename $snpchr | cut -d'.' -f4`
-    if [ $ind = 'NA' ]; then
-	echo "bcftools view -Oz -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
+    if $sanger; then
+	if [ $ind = 'NA' ]; then
+	    echo "bcftools view -Oz -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
+	else
+	    echo "bcftools view -Oz -S $ind -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
+	fi
     else
-	echo "bcftools view -Oz -S $ind -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
+	if [ $ind = 'NA' ]; then
+	    echo "bcftools view -Oz -R $snpchr $vcf/chr$chr.dose.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
+	else
+	    echo "bcftools view -Oz -S $ind -R $snpchr $vcf/chr$chr.dose.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 	
+	fi
     fi
 done | ./sub_scripts/submit_jobarray.py -m 18G -n logs.for.extract. #18G mem is based on size of chr2 for decode.
-  
-###check with snp-name?
 
 #cat/collect everything into one vcf
+
+#Waiting parts
 nrOfChromosomes=`awk '{print $2}' $snp | sort -n | uniq | wc -l`
 chrExtracted=`ls tmpGeno/$currentExtract/extracted/ | wc -l`
 stillLacking=`expr $nrOfChromosomes - $chrExtracted`
@@ -164,6 +176,7 @@ while [ $stillLacking != 0 ]; do
     stillLacking=`expr $nrOfChromosomes - $chrExtracted`
     sleep 10
 done
+
 if [ $stillLacking = 0 ]; then
     subVCFs=`ls tmpGeno/$currentExtract/extracted/from.chr.*.vcf.gz | tr '\n' ' '`
 else
@@ -177,12 +190,22 @@ echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted
 echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./sub_scripts/submit_jobarray.py -n logs.for.header. -w logs.for.concat. -m $memory
 echo "./sub_scripts/vcfToR.header.sh tmpGeno/$currentExtract"  | ./sub_scripts/submit_jobarray.py -w logs.for.header. -n logs.for.finalHeader. -m $memory
 
-if [ $type = 'LIKELIHOOD' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
-elif [ $type = 'GENOTYPE' ]; then
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
-else 
-    echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+if $sanger; then
+    if [ $type = 'LIKELIHOOD' ]; then
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    elif [ $type = 'GENOTYPE' ]; then
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/DS,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    else 
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/RefPanelAF,INFO/AC,INFO/AN,FORMAT/GT,FORMAT/ADS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    fi
+else
+    if [ $type = 'LIKELIHOOD' ]; then
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/AF,INFO/MAF,INFO/R2,INFO/ER2,FORMAT/GT,FORMAT/DS tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    elif [ $type = 'GENOTYPE' ]; then
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/AF,INFO/MAF,INFO/R2,INFO/ER2,FORMAT/DS,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    else 
+	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/AF,INFO/MAF,INFO/R2,INFO/ER2,FORMAT/GT,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.format. -w logs.for.concat.
+    fi
 fi
 echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n logs.for.noheader. -w logs.for.format.
 
