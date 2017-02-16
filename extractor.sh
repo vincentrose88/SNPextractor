@@ -119,6 +119,19 @@ else
     fi
 fi
 
+if $sanger; then
+    if [ "x$(ls $vcf* | grep dose)" != "x" ]; then
+	echo "Sanger flag is off, but vcf-names are from Sanger. Have you forgotten the sanger-flag (-a)?"
+	exit 3
+    fi
+else
+    if [ "x$(ls $vcf* | grep dose)" == "x" ]; then
+	echo "Sanger flag is on, but vcf-names are from Michigan. Have you the sanger-flag (-a) in your command?"
+	exit 4
+    fi
+fi
+
+
 #Use cohort studyid if there is no individual list.
 if [[ $ind = 'NA' ]] && [[ $cohort = 'NA' ]]; then
     echo 'no list of individuals specified and no cohort study id given. Extracting SNPs from all individuals in dataset'
@@ -144,7 +157,9 @@ do
     awk -v "chr=$chr" '$2==chr {print $2"\t"$3"\t"$3}' $snp > tmpGeno/$currentExtract/splitted/SNPs.on.chr.$chr.list
 done
 
-for snpchr in `ls tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list`; do
+for chr in `awk '{print $2}' $snp | sort -n | uniq`
+do
+    snpchr="tmpGeno/$currentExtract/splitted/SNPs.on.chr.$chr.list"
     if $sanger; then
 	if [ $ind = 'NA' ]; then
 	    echo "bcftools view -Oz -R $snpchr $vcf/$chr.vcf.gz -o tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz" 
@@ -162,16 +177,19 @@ done | ./sub_scripts/submit_jobarray.py -m 18G -n extract. #18G mem is based on 
 
 #New tactic - pre-emptive assign subVCFs before extraction is done from input file - and make the concat wait for the extract script
 
-subVCFs="$(for splitName in tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list
+tmpsubVCFs="$(for splitName in tmpGeno/$currentExtract/splitted/SNPs.on.chr*.list
 do
      chr=`basename $splitName | cut -d'.' -f 4`
      echo "tmpGeno/$currentExtract/extracted/from.chr.$chr.vcf.gz"
 done)"
 
+subVCFs=`echo $tmpsubVCFs | tr '\n' ' '`
+
 #cat/collect everything into one vcf
 
 #Concating
-echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./sub_scripts/submit_jobarray.py -w extract. -n concat. -m $memory
+echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./sub_scripts/submit_jobarray.py -w catchUp. -n concat. -m $memory
+
 #Getting the header (for later use)
 echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./sub_scripts/submit_jobarray.py -n header. -w concat. -m $memory
 echo "./sub_scripts/vcfToR.header.sh tmpGeno/$currentExtract"  | ./sub_scripts/submit_jobarray.py -w header. -n finalHeader. -m $memory
@@ -209,6 +227,9 @@ fi
 ##Waiting for qstat scripts:
 while ! [ -f $isTheOutputFileThere ]
 do
+    if [ -f $isTheOutputFileThere ]; then
+	break
+    fi
     echo "-------------------------------------------------------------------------------------"
     echo '(Still) waiting for the cluster-submitted scrits to finish:'
     qstat | awk 'NR!=2 {print $1,$3,$5}'
@@ -222,7 +243,7 @@ echo "--------------------------------------------------------------------------
 mkdir -p logs
 for i in e command o exe
 do
-    for j in extract concat header finalHeader format convertToCSV ld noheader
+    for j in extract concat header finalHeader format convertToCSV ld noheader catchUp
     do
 	mv $j.*.$i logs/
     done
