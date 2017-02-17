@@ -185,10 +185,13 @@ done)"
 
 subVCFs=`echo $tmpsubVCFs | tr '\n' ' '`
 
+#Let the fileserver catch up:
+#echo "sleep 30" | ./sub_scripts/submit_jobarray.py -n catchUp. -w extract.
+
 #cat/collect everything into one vcf
 
 #Concating
-echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./sub_scripts/submit_jobarray.py -w catchUp. -n concat. -m $memory
+echo "bcftools concat $subVCFs -Oz -o tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz" | ./sub_scripts/submit_jobarray.py -n concat. -m $memory -w extract. #catchUp.
 
 #Getting the header (for later use)
 echo "bcftools view -h tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -Ov -o tmpGeno/$currentExtract/header.vcf" | ./sub_scripts/submit_jobarray.py -n header. -w concat. -m $memory
@@ -243,7 +246,7 @@ echo "--------------------------------------------------------------------------
 mkdir -p logs
 for i in e command o exe
 do
-    for j in extract concat header finalHeader format convertToCSV ld noheader catchUp
+    for j in extract concat header finalHeader format convertToCSV ld noheader
     do
 	mv $j.*.$i logs/
     done
