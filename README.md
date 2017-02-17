@@ -51,6 +51,7 @@ Run the extractor.sh script with the following flags and arguments:
   * `-m` **m**emory requested post chromosomes extraction. How much memory do you want to request from the cluters grid engine after extracting from chromosomes? Default: 2G
   * `-c` **c**ohort's study-id. Specify the study-id to extract all individuals from that study. Multiple studyids allowed when seperated with ',' and **no** spaces, ie. 1,2,3.
   * `-a` s**a**nger server? Is the imputation from the sanger server then add this flag. Default is the Micigan server (ie. do not add this flag, if the imputation is on the michigan server).
+  * `-g` **G**RS out put: Output genoFile.nohead and newHeader instead of standard csv-files, to be used directly in the GRS. Only works with DOSAGE (automatical sat)
  * Future options **Not yet implemented**:
   * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
 

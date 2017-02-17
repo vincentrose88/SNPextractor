@@ -12,8 +12,9 @@ cohort="NA"
 multipleCohort="NA"
 multipleCohortUsed=false
 sanger=false
+grs=false
 
-while getopts ":s:v:t:i:l:o:m:c:da" opt; do 
+while getopts ":s:v:t:i:l:o:m:c:dag" opt; do 
     case $opt in 
 	s) #SNP <FILE>
 	    snp=$OPTARG
@@ -45,6 +46,9 @@ while getopts ":s:v:t:i:l:o:m:c:da" opt; do
 	a) #sAnger server
 	    sanger=true
 	    ;;
+	g) #sAnger server
+	    grs=true
+	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
 	    exit 1
@@ -59,6 +63,19 @@ done
 #If statement to check that not both cohort and individuals is used
 ## Define value to determine if cohort or individual is used
 
+#Readies the check for the final files
+
+isTheOutputFileThere="$output.geno.csv"
+isTheOutputInfoThere="$output.info.csv"
+
+#Special GRS case
+if $grs; then
+    type="DOSAGE"
+    ld="NA"
+    isTheOutputFileThere="genoFile.noHead"
+    isTheOutputInfoThere="newHeader"
+fi
+
 echo "Script called with the following arguments:"
 echo "snp: $snp"
 echo "vcf: $vcf"
@@ -70,6 +87,7 @@ echo "output: $output"
 echo "Use timestamp: $useDate"
 echo "memory requested (post extracting from chromosomes): $memory"
 echo "sanger-flag set to: $sanger"
+echo "GRS-flag set to: $grs"
 echo "-------------------------------------------------------------------------------------"
 
 #Check if multiple cohorts is given
@@ -95,12 +113,12 @@ fi
 mkdir -p tmpGeno/imputed
 mkdir -p tmpGeno/$currentExtract/extracted
 mkdir -p tmpGeno/$currentExtract/splitted
-isTheOutputFileThere="$output.geno.csv"
 
 #Clearing out old output files
 if [ -f "$isTheOutputFileThere" ]; then
     echo "Removing old outputfile: $output.csv"
     rm $isTheOutputFileThere
+    rm $isTheOutputInfoThere
 fi 
 
 if [ $vcf = 'NA' ]; then
@@ -217,14 +235,21 @@ fi
 echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n noheader. -w format.
 
 #LD threshold
-if [[ $ld!="NA" ]]; then
+if [[ $ld != 'NA' ]]; then
     mkdir -p tmpGeno/$currentExtract/ld
     echo "plink19 --vcf tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz --r2 --out tmpGeno/$currentExtract/ld/plink" | ./sub_scripts/submit_jobarray.py -m $memory -n ld. -w concat.
     ldFile="tmpGeno/$currentExtract/ld/plink.ld"   
 #Format into csv with R.
-    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $ld" | ./sub_scripts/submit_jobarray.py -n convertToCSV. -w noheader. -m $memory
+    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $ld" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
 else
-    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToCSV. -w noheader. -m $memory
+    if !$grs; then
+	echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
+    else
+	for i in genoFile.noHead newHeader; 
+	do 
+	    echo "mv tmpGeno/$currentExtract/$i ."
+	done | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
+    fi  
 fi
 
 ##Waiting for qstat scripts:
@@ -234,7 +259,7 @@ do
 	break
     fi
     echo "-------------------------------------------------------------------------------------"
-    echo '(Still) waiting for the cluster-submitted scrits to finish:'
+    echo '(Still) waiting for the cluster-submitted scripts to finish:'
     qstat | awk 'NR!=2 {print $1,$3,$5}'
     echo ''
     echo 'Or waiting for results file to be written'
@@ -246,15 +271,27 @@ echo "--------------------------------------------------------------------------
 mkdir -p logs
 for i in e command o exe
 do
-    for j in extract concat header finalHeader format convertToCSV ld noheader
-    do
-	mv $j.*.$i logs/
-    done
+    if [[ $ld != 'NA' ]]; 
+    then
+	for j in extract concat header finalHeader format convertToFinal ld noheader
+	do
+	    mv $j.*.$i logs/
+	done
+    else
+	for j in extract concat header finalHeader format convertToFinal noheader
+	do
+	    mv $j.*.$i logs/
+	done
+   fi
 done
 
-nrOfSNPs=$(expr `wc -l $output.info.csv | cut -d' ' -f1` - 1)
-nrOfIndividuals=$(expr `wc -l $output.geno.csv | cut -d' ' -f1` - 1)
 echo "Extraction done. See logs/ for logs for each step."
-echo "Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
+if $grs; then
+    echo "newHeader and genoFile.noHead is ready for GRS"
+else
+    nrOfSNPs=$(expr `wc -l $output.info.csv | cut -d' ' -f1` - 1)
+    nrOfIndividuals=$(expr `wc -l $output.geno.csv | cut -d' ' -f1` - 1)
+    echo "Your extraction of $nrOfSNPs SNPs for $nrOfIndividuals individuals is recorded in $output.geno.csv and $output.info.csv" 
+fi
 echo "-------------------------------------------------------------------------------------"
 exit 0
