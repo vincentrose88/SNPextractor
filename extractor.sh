@@ -255,6 +255,7 @@ fi
 ##Waiting for qstat scripts:
 while ! [ -f $isTheOutputFileThere ]
 do
+    ls > /dev/null
     if [ -f $isTheOutputFileThere ]; then
 	break
     fi
