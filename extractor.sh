@@ -46,7 +46,7 @@ while getopts ":s:v:t:i:l:o:m:c:dag" opt; do
 	a) #sAnger server
 	    sanger=true
 	    ;;
-	g) #sAnger server
+	g) #grs output?
 	    grs=true
 	    ;;
 	\?)
@@ -242,7 +242,7 @@ if [[ $ld != 'NA' ]]; then
 #Format into csv with R.
     echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $ld" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
 else
-    if !$grs; then
+    if [ "$grs" = false ] ; then
 	echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
     else
 	for i in genoFile.noHead newHeader; 
