@@ -245,10 +245,7 @@ else
     if [ "$grs" = false ] ; then
 	echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
     else
-	for i in genoFile.noHead newHeader; 
-	do 
-	    echo "mv tmpGeno/$currentExtract/$i ."
-	done | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
+	echo "./sub_scripts/convertToGRS.sh tmpGeno/$currentExtract/" | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
     fi  
 fi
 
