@@ -4,7 +4,6 @@ snp="NA"
 vcf="NA"
 type="DOSAGE"
 ind="NA"
-ld="NA"
 output="SNPsExtracted"
 useDate=true
 memory="2G"
@@ -27,9 +26,6 @@ while getopts ":s:v:t:i:l:o:m:c:dag" opt; do
 	    ;;
 	i) #individuals <FILE>
 	    ind=$OPTARG
-	    ;;
-	l) #LD <FLOAT>
-	    ld=$OPTARG
 	    ;;
 	o) #output <STRING>
 	    output=$OPTARG
@@ -82,7 +78,6 @@ echo "vcf: $vcf"
 echo "type: $type"
 echo "indiduals: $ind"
 echo "cohort studyid: $cohort"
-echo "ld: $ld"
 echo "output: $output"
 echo "Use timestamp: $useDate"
 echo "memory requested (post extracting from chromosomes): $memory"
@@ -234,19 +229,11 @@ else
 fi
 echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n noheader. -w format.
 
-#LD threshold
-if [[ $ld != 'NA' ]]; then
-    mkdir -p tmpGeno/$currentExtract/ld
-    echo "plink19 --vcf tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz --r2 --out tmpGeno/$currentExtract/ld/plink" | ./sub_scripts/submit_jobarray.py -m $memory -n ld. -w concat.
-    ldFile="tmpGeno/$currentExtract/ld/plink.ld"   
-#Format into csv with R.
-    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $ld" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
+#Final Format
+if [ "$grs" = false ] ; then
+    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
 else
-    if [ "$grs" = false ] ; then
-	echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
-    else
-	echo "./sub_scripts/convertToGRS.sh tmpGeno/$currentExtract/" | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
-    fi  
+    echo "./sub_scripts/convertToGRS.sh tmpGeno/$currentExtract/" | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
 fi
 
 ##Waiting for qstat scripts:
@@ -269,18 +256,10 @@ echo "--------------------------------------------------------------------------
 mkdir -p logs
 for i in e command o exe
 do
-    if [[ $ld != 'NA' ]]; 
-    then
-	for j in extract concat header finalHeader format convertToFinal ld noheader
-	do
-	    mv $j.*.$i logs/
-	done
-    else
-	for j in extract concat header finalHeader format convertToFinal noheader
-	do
-	    mv $j.*.$i logs/
-	done
-   fi
+    for j in extract concat header finalHeader format convertToFinal noheader
+    do
+	mv $j.*.$i logs/
+    done
 done
 
 echo "Extraction done. See logs/ for logs for each step."

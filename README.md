@@ -53,9 +53,6 @@ Run the extractor.sh script with the following flags and arguments:
   * `-c` **c**ohort's study-id. Specify the study-id to extract all individuals from that study. Multiple studyids allowed when seperated with ',' and **no** spaces, ie. 1,2,3.
   * `-a` s**a**nger server? Is the imputation from the sanger server then add this flag. Default is the Micigan server (ie. do not add this flag, if the imputation is on the michigan server).
   * `-g` **G**RS out put: Output `genoFile.nohead`, `newHeader` and `all.SNPs.vcf` instead of standard csv-files, to be used directly in the GRS (move the .vcf file to the GRS/geno folder, and the other two to the GRS folder). Only works with DOSAGE (automatical sat)
- * Future options **Not yet implemented**:
-  * `-l` **L**D cut-off (for R^2) for excluding variants which are in LD with eachothers in the dataset. Only the variant with the highest imputation quality (info score) will be kept.
-
 
 ### Output
 The extractions output is saved as two .csv files, one with only the genotype data (rows are individuals, columns are SNPs) and one with the info for each SNP (chromosome, position, ref and alt alleles).
