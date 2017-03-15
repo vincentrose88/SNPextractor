@@ -34,9 +34,10 @@ colnames(finalInfo)[4:5] <- c("REF(0)","ALT(2)")
 SNPnames <- read.table(userSNPsFile,h=F,as.is=T)
 colnames(SNPnames) <- c('ID','CHROM','POS')
 
-info <- merge(finalInfo,SNPnames,by=c('CHROM','POS')
+info <- merge(finalInfo,SNPnames,by=c('CHROM','POS'))
 
 
-#Write out as csv's
+#Write out as csv
+              
 write.csv(finalGeno,paste(outputName,'geno','csv',sep='.'),row.names=T,quote=F)
 write.csv(info,paste(outputName,'info','csv',sep='.'),row.names=F,quote=F)
