@@ -37,7 +37,6 @@ if(ncol(finalGeno)>1){
     finalGeno <- as.data.frame(finalGeno[-which(rownames(finalGeno)=='ID'),],stringsAsFactors=F)
 }
 colnames(finalGeno) <- genoColnames
-colnames(finalGeno)[1] <- 'particid'
 
 #Write out as csv
 write.csv(finalGeno,paste(outputName,'geno','csv',sep='.'),row.names=T,quote=F)
