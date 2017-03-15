@@ -227,7 +227,8 @@ else
 	echo "bcftools annotate -Oz -x QUAL,FILTER,INFO/AF,INFO/MAF,INFO/R2,INFO/ER2,FORMAT/GT,FORMAT/GP tmpGeno/$currentExtract/all.SNPs.extracted.vcf.gz -o tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz" | ./sub_scripts/submit_jobarray.py -m $memory -n format. -w concat.
     fi
 fi
-echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.noHead"  | ./sub_scripts/submit_jobarray.py -m $memory -n noheader. -w format.
+echo "bcftools view -Ov -H  tmpGeno/$currentExtract/all.SNPs.formatted.vcf.gz -o tmpGeno/$currentExtract/genoFile.tmp"  | ./sub_scripts/submit_jobarray.py -m $memory -n noheader. -w format.
+echo "./sub_scripts/add_dummyNames.sh tmpGeno/$currentExtract" |  ./sub_scripts/submit_jobarray.py -m $memory -w noheader. -n dummyN.
 
 #Final Format
 if [ "$grs" = false ] ; then
@@ -256,7 +257,7 @@ echo "--------------------------------------------------------------------------
 mkdir -p logs
 for i in e command o exe
 do
-    for j in extract concat header finalHeader format convertToFinal noheader
+    for j in extract concat header finalHeader format convertToFinal noheader dummyN
     do
 	mv $j.*.$i logs/
     done
