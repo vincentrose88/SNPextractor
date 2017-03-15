@@ -232,9 +232,9 @@ echo "./sub_scripts/add_dummyNames.sh tmpGeno/$currentExtract" |  ./sub_scripts/
 
 #Final Format
 if [ "$grs" = false ] ; then
-    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w noheader. -m $memory
+    echo "./sub_scripts/covertToCSV.R tmpGeno/$currentExtract/ $output $snp" | ./sub_scripts/submit_jobarray.py -n convertToFinal. -w dummyN. -m $memory
 else
-    echo "./sub_scripts/convertToGRS.sh tmpGeno/$currentExtract/" | ./sub_scripts/submit_jobarray.py -w noheader. -n convertToFinal. -m $memory
+    echo "./sub_scripts/convertToGRS.sh tmpGeno/$currentExtract" | ./sub_scripts/submit_jobarray.py -w dummyN. -n convertToFinal. -m $memory
 fi
 
 ##Waiting for qstat scripts:
