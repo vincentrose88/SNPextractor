@@ -26,13 +26,13 @@ which will create the folder `SNPextractor` from where you will need to go to (`
 ##How to use
 ### Examples
 Extract dosage information for 4 SNPs for three inter99 individuals from Decode dataset:
-`./extractor.sh -s SNPlist.example -i individualslist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t DOSAGE -o inter99.decode.example`
+`./extractor.sh -s SNPlist.example -i individualslist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t DOSAGE -o inter99.decode.example -a`
 
 Extract genotype information for 4 SNPs for all individuals in studies 1 and 2 from Decode dataset:
-`./extractor.sh -s SNPlist.example -c 1,2 -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t GENOTYPE -o project.1.2.decode.example`
+`./extractor.sh -s SNPlist.example -c 1,2 -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t GENOTYPE -o project.1.2.decode.example -a`
 
-Extract likelihood information for 4 SNPs for all individuals from Decode dataset:
-`./extractor.sh -s SNPlist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t LIKELIHOOD -o all.decode.example`
+Extract likelihood information for 4 SNPs for all individuals from decode dataset for an GRS:
+`./extractor.sh -s SNPlist.example -v /emc/cbmr/data/imputed/decode-Nov09-sanger-hwe10e5/ -t LIKELIHOOD -o all.decode.example -a -g`
 
 
 ### Run
@@ -48,11 +48,11 @@ Run the extractor.sh script with the following flags and arguments:
   * `-i` (**i**ndividuals): File containing a list of individuals you want extracted. One individuals particid on each line, using "\n".
  * Optional parameters
   * `-o` **o**utput filename. The suffix `.csv` will be added regardless. Default is: SNPsExtracted.csv. **NB: Outputfiles with identical names will be overwritten**
-  * `-d` **d**ate flag. Use if you want to *avoid* having timestamp-names on the temporary work-directory. **FORBIDDEN** if you are using the same folder to extract several SNPs because of overwriting risk.
+  * `-d` **d**ate flag. *Doesn't need an argument* Use if you want to *avoid* having timestamp-names on the temporary work-directory. **FORBIDDEN** if you are using the same folder to extract several SNPs because of overwriting risk.
   * `-m` **m**emory requested post chromosomes extraction. How much memory do you want to request from the cluters grid engine after extracting from chromosomes? Default: 2G
   * `-c` **c**ohort's study-id. Specify the study-id to extract all individuals from that study. Multiple studyids allowed when seperated with ',' and **no** spaces, ie. 1,2,3.
-  * `-a` s**a**nger server? Is the imputation from the sanger server then add this flag. Default is the Micigan server (ie. do not add this flag, if the imputation is on the michigan server).
-  * `-g` **G**RS out put: Output `genoFile.nohead`, `newHeader` and `all.SNPs.vcf` instead of standard csv-files, to be used directly in the GRS (move the .vcf file to the GRS/geno folder, and the other two to the GRS folder). Only works with DOSAGE (automatical sat)
+  * `-a` s**a**nger server? *Doesn't need an argument* Is the imputation from the sanger server then add this flag. Default is the Micigan server (ie. do not add this flag, if the imputation is on the michigan server).
+  * `-g` **G**RS out put: *Doesn't need an argument* Output `genoFile.nohead`, `newHeader` and `all.SNPs.vcf` instead of standard csv-files, to be used directly in the GRS (move the .vcf file to the GRS/geno folder, and the other two to the GRS folder). Only works with DOSAGE (automatical sat)
 
 ### Output
 The extractions output is saved as two .csv files, one with only the genotype data (rows are individuals, columns are SNPs) and one with the info for each SNP (chromosome, position, ref and alt alleles).
