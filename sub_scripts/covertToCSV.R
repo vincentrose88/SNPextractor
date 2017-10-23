@@ -38,6 +38,19 @@ if(ncol(finalGeno)>1){
 }
 colnames(finalGeno) <- genoColnames
 
+#Removing phasing info in genotypes
+genotypeFromPhase <- function(x){
+    y <- strsplit(x,'|')[[1]]
+    z <- as.numeric(y[1])+as.numeric(y[3])
+    return(z)
+}
+    
+if(any(grepl('|',finalGeno,fixed=T))){
+    finalGeno <- apply(finalGeno,c(1,2),genotypeFromPhase)
+}
+
+
+
 #Write out as csv
 write.csv(finalGeno,paste(outputName,'geno','csv',sep='.'),row.names=T,quote=F)
 write.csv(finalInfo,paste(outputName,'info','csv',sep='.'),row.names=F,quote=F)
