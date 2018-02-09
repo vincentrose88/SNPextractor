@@ -134,12 +134,12 @@ fi
 
 if $sanger; then
     if [ "x$(ls $vcf* | grep dose)" != "x" ]; then
-	echo "Sanger flag is off, but vcf-names are from Sanger. Have you forgotten the sanger-flag (-a)?"
+	echo "Sanger flag is on, but vcf-names are from Michigan. Do you have the sanger-flag (-a) in your command?"
 	exit 3
     fi
 else
     if [ "x$(ls $vcf* | grep dose)" == "x" ]; then
-	echo "Sanger flag is on, but vcf-names are from Michigan. Have you the sanger-flag (-a) in your command?"
+	echo "Sanger flag is off, but vcf-names are from Sanger. Have you forgotten the sanger-flag (-a)?"
 	exit 4
     fi
 fi
